@@ -6,7 +6,8 @@ from PIL import Image
 from transformers import AutoTokenizer, AutoModel, ViTModel, ViTImageProcessor
 import os
 from huggingface_hub import login
-
+from dotenv import load_dotenv
+load_dotenv() 
 hf_token = os.getenv("HF_TOKEN")  
 login(hf_token)
 
@@ -16,8 +17,8 @@ login(hf_token)
 CONFIG = {
     "vit_name": "google/vit-base-patch16-224-in21k",
     "text_name": "vinai/phobert-base",
-    "answer_space": "./model/answer_space.txt",  
-    "save_path": "./model/best_model.pth",       
+    "answer_space": "./models/answer_space.txt",  
+    "save_path": "./models/best_model.pth",       
     "max_len": 20,
     "num_question_types": 3,     
     "type_embedding_dim": 128,
@@ -119,9 +120,7 @@ def predict(image_path: str, question: str, question_type: int = 0):
     return answer_space[pred_idx]
 
 
-# ---------------------------
-# Example usage
-# ---------------------------
+
 if __name__ == "__main__":
     image_path = "./image.png" 
     question = "Có mấy con mèo?"
