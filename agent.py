@@ -4,8 +4,8 @@ from google.adk.tools import Tool
 import os
 import logging
 logging.basicConfig(level=logging.INFO)
+from pydantic import BaseModel
 
-# === Tool ===
 predict_tool = Tool(
     name="predict_tool",
     description="Trả lời câu hỏi dựa trên hình ảnh.",
@@ -16,20 +16,29 @@ predict_tool = Tool(
     }
 )
 
+class VQAResponse(BaseModel):
+    answer: str
+    confidence: float
+    reasoning: str
+
+
 vqa_agent = Agent(
-    name="vqa_litemm_agent",
+    name="vqa_structured_agent",
     model="gemini-2.0-flash-thinking",
-    description="""
-        Agent nhận ảnh + câu hỏi, tự suy nghĩ trước khi gọi tool predict_tool.
-        Nếu ảnh rõ ràng, agent trực tiếp trả lời. Nếu cần, gọi tool.
+     description="""
+        Agent nhận ảnh + câu hỏi, trả về JSON có cấu trúc:
+        answer, confidence, reasoning.
     """,
     tools=[predict_tool],
     instruction="""
-    Khi user gửi ảnh và câu hỏi:
-    1. Phân tích câu hỏi, xác định thông tin cần tìm.
-    2. Nếu model có thể trả lời dựa trên reasoning, trả lời trực tiếp.
-    3. Nếu cần thông tin chi tiết từ ảnh, gọi tool predict_tool.
-    4. Kết hợp reasoning + output từ tool để trả về câu trả lời chính xác.
-    """
+    Khi nhận ảnh + câu hỏi:
+    1. Phân tích câu hỏi (reasoning)
+    2. Nếu cần, gọi predict_tool
+    3. Trả kết quả dưới dạng JSON:
+        - answer: câu trả lời ngắn
+        - confidence: độ tin cậy
+        - reasoning: giải thích cách tìm ra câu trả lời
+    """,
+      output_type=VQAResponse, 
 )
 
