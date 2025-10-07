@@ -21,20 +21,26 @@ class VQAResponse(BaseModel):
     confidence: float = 0.95
     reasoning: str
 
-# Persistent memory
-memory = Memory(storage_type="persistent", storage_path="../storage.db", max_history=50)
+# Stateful persistent memory
+memory = Memory(
+    storage_type="persistent",
+    storage_path="../storage.db",
+    max_history=50,
+    stateful=True  # đây là key để agent giữ trạng thái riêng
+)
 
+# Stateful Agent
 vqa_agent = Agent(
-    name="vqa_agent",
+    name="vqa_stateful_agent",
     model="gemini-2.0-flash-thinking",
     tools=[predict_tool],
     output_type=VQAResponse,
     memory=memory,
-    description="Agent trả lời VQA và lưu persistent memory.",
+    description="Agent VQA có trạng thái riêng, multi-turn reasoning, persistent memory.",
     instruction="""
-    1. Phân tích câu hỏi + ảnh  
-    2. Nếu cần, gọi predict_tool  
-    3. Trả về JSON: answer, confidence, reasoning  
-    4. Lưu câu hỏi + kết quả vào persistent memory
+    1. Nhớ history + context user trong memory riêng
+    2. Khi nhận câu hỏi mới, kiểm tra state + history
+    3. Sử dụng reasoning + tool nếu cần để trả lời
+    4. Lưu câu hỏi + kết quả + reasoning vào memory
     """
 )
