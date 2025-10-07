@@ -1,6 +1,5 @@
 #from .plugin import predict
 from google.adk.agents import Agent, Tool
-from plugin import predict
 import os
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -32,30 +31,27 @@ def predict(image_path: str, question: str, question_type: int = 0):
         return f"❌ Lỗi: {e}"
 
 
+# === Tool: predict_tool ===
 predict_tool = Tool(
     name="predict_tool",
-    description="Trả lời câu hỏi dựa trên hình ảnh và câu hỏi văn bản.",
+    description="Phân tích hình ảnh và trả lời câu hỏi về nội dung ảnh.",
     func=predict,
     parameters={
-        "image": {
-            "type": "image",
-            "description": "Ảnh cần phân tích."
-        },
-        "question": {
-            "type": "string",
-            "description": "Câu hỏi về nội dung ảnh."
-        }
+        "image": {"type": "image", "description": "Ảnh cần phân tích."},
+        "question": {"type": "string", "description": "Câu hỏi liên quan đến ảnh."}
     }
 )
 
 
+# === Agent: vqa_tool_agent ===
 root_agent = Agent(
-    name="vqa_agent_web",
+    name="vqa_tool_agent",
     model="gemini-2.0-flash",
-    description="Agent trả lời câu hỏi dựa trên hình ảnh người dùng gửi.",
+    description="Agent nhận ảnh + câu hỏi và dùng tool để trả lời.",
     tools=[predict_tool],
     instruction="""
-    Nếu người dùng gửi hình ảnh và một câu hỏi, hãy gọi công cụ `predict_tool`
-    để trả về câu trả lời ngắn gọn và chính xác.
+    Nếu người dùng gửi hình ảnh, hãy **tự động gọi công cụ predict_tool** để phân tích nội dung ảnh.
+    Nếu người dùng chỉ hỏi về văn bản, hãy tự trả lời bằng ngôn ngữ tự nhiên.
+    Khi dùng predict_tool, truyền cả ảnh và câu hỏi của người dùng.
     """
 )
