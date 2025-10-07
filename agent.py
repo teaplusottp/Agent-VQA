@@ -1,11 +1,10 @@
-from .plugin import predict
 from google.adk.agents import Agent
 from google.adk.tools import Tool
-import os
-import logging
-logging.basicConfig(level=logging.INFO)
+from google.adk.memory import Memory
 from pydantic import BaseModel
+from plugin import predict
 
+# === Tool ===
 predict_tool = Tool(
     name="predict_tool",
     description="Trả lời câu hỏi dựa trên hình ảnh.",
@@ -16,29 +15,34 @@ predict_tool = Tool(
     }
 )
 
+# === Output structured ===
 class VQAResponse(BaseModel):
     answer: str
     confidence: float
     reasoning: str
 
-
-vqa_agent = Agent(
-    name="vqa_structured_agent",
-    model="gemini-2.0-flash-thinking",
-     description="""
-        Agent nhận ảnh + câu hỏi, trả về JSON có cấu trúc:
-        answer, confidence, reasoning.
-    """,
-    tools=[predict_tool],
-    instruction="""
-    Khi nhận ảnh + câu hỏi:
-    1. Phân tích câu hỏi (reasoning)
-    2. Nếu cần, gọi predict_tool
-    3. Trả kết quả dưới dạng JSON:
-        - answer: câu trả lời ngắn
-        - confidence: độ tin cậy
-        - reasoning: giải thích cách tìm ra câu trả lời
-    """,
-      output_type=VQAResponse, 
+# === Persistent Memory ===
+memory = Memory(
+    storage_type="persistent",   # khác với session
+    storage_path="./storage.db", # SQLite db
+    max_history=50               # lưu tối đa 50 turn
 )
 
+# === Agent với Persistent Storage ===
+vqa_agent = Agent(
+    name="vqa_persistent_agent",
+    model="gemini-2.0-flash-thinking",
+    tools=[predict_tool],
+    output_type=VQAResponse,
+    memory=memory,
+    description="""
+    Agent lưu trữ lâu dài câu hỏi + ảnh + kết quả.
+    Khi restart server, vẫn nhớ lịch sử của từng user.
+    """,
+    instruction="""
+    1. Khi nhận câu hỏi + ảnh, agent kiểm tra memory.
+    2. Nếu cần, gọi predict_tool.
+    3. Kết hợp reasoning + memory để trả lời.
+    4. Lưu câu hỏi + kết quả vào persistent storage.
+    """
+)
