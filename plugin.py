@@ -121,9 +121,29 @@ def predict(image_path: str, question: str, question_type: int = 0):
 
 
 
-if __name__ == "__main__":
-    image_path = "./image.png" 
-    question = "Có mấy con mèo?"
-    answer = predict(image_path, question, question_type=1)
-    print("Predicted answer:", answer)
+# if __name__ == "__main__":
+#     image_path = "./image.png" 
+#     question = "Có mấy con mèo?"
+#     answer = predict(image_path, question, question_type=1)
+#     print("Predicted answer:", answer)
 
+
+from google import genai
+
+client = genai.Client()
+
+def predict(image, question: str):
+    """Dùng Gemini multimodal model để trả lời câu hỏi về ảnh"""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[
+                {"role": "user", "parts": [
+                    {"text": question},
+                    {"inline_data": {"mime_type": image.content_type, "data": image.read()}}
+                ]}
+            ]
+        )
+        return response.text
+    except Exception as e:
+        return f"❌ Lỗi: {e}"
